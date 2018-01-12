@@ -155,7 +155,7 @@ class Board
   end
 
   def sorted_values(cards)
-    cards.map { |f| f&.value || 0 }.sort
+    cards.map { |f| f&.value || Card::BLANK_VALUE }.sort
   end
 
   def eql?(other)
@@ -217,16 +217,11 @@ class Board
   # We'll zip these into the columns so we can (numerically) keep them
   # separate.
   COLUMN_SEPARATORS = Array.new(N_COLUMNS - 1, COLUMN_SEPARATOR_VALUE).freeze
-  # This will be useful in Board when we construct a hash, because
-  # we can construct a perfect hash if we simply shift card values
-  # by their position (i.e. in a column or foundation) and or them
-  # together.  Perhaps it's premature optimization, but hey, I can't
-  # help but think of things like this after all my poker work.
-  #
+
   # The +2 is so we can use any Card's value as well as
-  # Card::BLANK_VALUE as well as COLUMN_SEPARATOR_VALUE.
-  # These magic values are ugly and should go away, but it'll be easier
-  # to do that after specs are written.
+  # Card::BLANK_VALUE as well as COLUMN_SEPARATOR_VALUE.  Those two
+  # magic values are ugly and should go away, but it'll be easier to
+  # do that after specs are written.
   CARD_BIT_WIDTH = Math.log2(Card::DECK_SIZE + 2).ceil
 
   def cards(arr)
