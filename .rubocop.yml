@@ -1,0 +1,4 @@
+AllCops:
+  DisplayCopNames:
+    Enabled: true
+  TargetRubyVersion: 2.5

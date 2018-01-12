@@ -1,0 +1,9 @@
+#! /usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require 'pp'
+
+require_relative 'lib/eus/solver'
+
+PP.pp Eus::Solver.new(STDIN).solve
