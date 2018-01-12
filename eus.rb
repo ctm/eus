@@ -176,9 +176,12 @@ class Board
       end
 
       max_len_zip(board_rows, foundation_strings).map do |(br, fs)|
-        (br || BLANK_ROW) + fs.to_s
+        [(br || BLANK_ROW), fs].join(FOUNDATION_SEPARATOR)
       end
     end
+
+    FOUNDATION_SEPARATOR = '  '
+    private_constant :FOUNDATION_SEPARATOR
 
     BLANK_ROW = ' ' * (Board::N_COLUMNS * 3 - 1)
     private_constant :BLANK_ROW
@@ -189,19 +192,14 @@ class Board
 
     # Returns an array of strings suitable for pairing up with each of
     # the board rows.  No cards on the foundation will result in an
-    # empty array being returned.  We currently separate the board from
-    # the foundation with FOUNDATION_SEPARATOR, but really that should
-    # be done elsewhere as part of a join.
+    # empty array being returned.
     def foundation_strings
       (Array.new(FOUNDATION_ROW_OFFSET, '') + board.foundations.map do |f|
-        FOUNDATION_SEPARATOR + f.last.to_s
+        f.last.to_s
       end).tap do |a|
-        a.pop while a.last&.strip&.empty?
+        a.pop while a.last&.empty?
       end
     end
-
-    FOUNDATION_SEPARATOR = '  '
-    private_constant :FOUNDATION_SEPARATOR
 
     FOUNDATION_ROW_OFFSET = 1
     private_constant :FOUNDATION_ROW_OFFSET
