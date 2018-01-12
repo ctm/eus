@@ -130,6 +130,14 @@ class Board
     @foundations = [nil, nil, nil, nil]
   end
 
+  def self.parse(string_or_io)
+    new.tap do |t|
+      t.instance_eval do
+        @columns, @cells, @foundations = Parser.new(string_or_io).parse
+      end
+    end
+  end
+
   def hash
     42 # TODO
   end
@@ -142,10 +150,14 @@ class Board
   # Currently it only verifies that each of the 52 cards is used just
   # once, although it does so based on the knowledge that there are
   # exactly Card::DECK_SIZE cards in the deck.
-  def check
-    unless (columns + cells + foundation_cards).flatten.uniq.size == Card::DECK_SIZE # rubocop:disable GuardClause, LineLength
-      raise 'Incorrect number of cards'
+  def check # rubocop:disable AbcSize
+    all = (columns + cells.compact + foundation_cards).flatten
+
+    unless all.size == Card::DECK_SIZE
+      raise "Expected #{Card::DECK_SIZE} cards, got #{all.size}"
     end
+
+    raise 'At least one duplicate card' unless all.uniq.size == Card::DECK_SIZE # rubocop:disable LineLength
   end
 
   # This is only used in consistency checking.  It returns all the cards
@@ -154,9 +166,9 @@ class Board
   # consistency check.
   def foundation_cards
     foundations.map do |foundation|
-      n_to_generate = foundation ? RANK_VALUES[foundation.rank] + 1 : 0
+      n_to_generate = foundation ? Card::RANK_VALUES[foundation.rank] + 1 : 0
       suit = foundation&.suit
-      Array.new(n_to_generate) { |rv| Card.new(VALUES_RANK[rv], suit) }
+      Array.new(n_to_generate) { |rv| Card.new(Card::VALUES_RANK[rv], suit) }
     end
   end
 
@@ -170,6 +182,8 @@ class Board
 
   attr_reader :columns, :cells, :foundations
 
+  alias == eql?
+
   private
 
   def cards(arr)
@@ -178,6 +192,9 @@ class Board
 
   # Provides a nice string representation of a board.
   class Presenter
+    FOUNDATION_ROW_OFFSET = 1
+    BLANK_ROW = ' ' * (Board::N_COLUMNS * 3 - 1)
+
     def initialize(board)
       @board = board
     end
@@ -191,7 +208,7 @@ class Board
     attr_reader :board
 
     def rows
-      column_rows + [''] + foundation_row
+      column_rows + [''] + [cells_row]
     end
 
     def column_rows
@@ -207,11 +224,8 @@ class Board
     FOUNDATION_SEPARATOR = '  '
     private_constant :FOUNDATION_SEPARATOR
 
-    BLANK_ROW = ' ' * (Board::N_COLUMNS * 3 - 1)
-    private_constant :BLANK_ROW
-
-    def foundation_row
-      [''] # TODO
+    def cells_row
+      board.cells.map { |card| card ? card.to_s : '  ' }.join(' ')
     end
 
     # Returns an array of strings suitable for pairing up with each of
@@ -221,9 +235,6 @@ class Board
       (Array.new(FOUNDATION_ROW_OFFSET, '') +
         board.foundations.map(&:to_s)).tap { |a| a.pop while a.last&.empty? }
     end
-
-    FOUNDATION_ROW_OFFSET = 1
-    private_constant :FOUNDATION_ROW_OFFSET
 
     # NOTE: this is not at all Presenter specific.  It implements zip
     # for an arbitrary number of arrays, but always returns arrays whose
@@ -244,8 +255,66 @@ class Board
       max_array.zip(*arrays).tap { |a| a.each(&:shift) }
     end
   end
+
+  # Reads the output of Presenter
+  class Parser
+    def initialize(string_or_io)
+      @lines = string_or_io.instance_eval do
+        respond_to?(:readlines) ? readlines : lines
+      end.map(&:rstrip)
+      decompose
+    end
+
+    def parse
+      [columns, cells, foundation]
+    end
+
+    private
+
+    BLANK_ROW_SIZE = Presenter::BLANK_ROW.size
+
+    attr_reader :lines, :cells, :foundation, :columns
+
+    def decompose # rubocop:disable MethodLength, AbcSize
+      # This method mutates lines as it goes.  As such, I prefer to not
+      # split it into smaller methods, so that all the line mutating can
+      # be done here.
+      @cells = cards_from_line(lines.pop)
+      blank = lines.pop
+      raise "Expected #{blank.inspect} to be empty" unless blank.empty?
+
+      # Now pull off the foundation cards, because we need them and
+      # they also get in the way.  Beware: this step mutates lines.
+      @foundation = lines[Presenter::FOUNDATION_ROW_OFFSET,
+                          Card::N_SUITS].map do |line|
+        if (extra = line.slice!(BLANK_ROW_SIZE..-1)&.strip) && !extra.empty?
+          Card.new(extra.downcase)
+        end
+      end
+
+      @columns = lines.map { |line| cards_from_line(line) }
+                      .transpose.map(&:compact)
+    end
+
+    def cards_from_line(line)
+      Array.new(Board::N_COLUMNS) do
+        card = line.slice!(0, 3).strip
+        card.empty? ? nil : Card.new(card.downcase)
+      end
+    end
+  end
 end
 
 b = Board.new
 b.check
 puts b.to_s
+bprime = Board.parse(StringIO.new(b.to_s))
+bprime.check
+raise 'b not equal to bprime' unless b == bprime # Meaningless for now
+
+b2 = Board.parse(File.open('template'))
+b2.check
+puts b2.to_s
+b2prime = Board.parse(StringIO.new(b2.to_s))
+b2prime.check
+raise 'b2 not equal to b2prime' unless b2 == b2prime # Meaningless for now
