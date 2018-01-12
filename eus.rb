@@ -37,6 +37,11 @@ require 'pry'
 # Represents a card.  All cards are frozen.  Ruby comparison works as
 # expected.  #to_s is compact, but #inspect still shows the ivars.
 class Card
+  # There is currently no way to construct a card with a 0 for its value,
+  # howevever, in places where we either have a card or nil and we need
+  # a value to represent it, we use 0.  This is ugly and may change.
+  BLANK_VALUE = 0
+
   # Can pass in strings or symbols, one argument with both, e.g., 'th' for
   # ten of hearts, or two args: 't', 'h'
   def initialize(card_or_rank, optional_suit = nil)
@@ -45,7 +50,7 @@ class Card
 
     @rank = initial_rank.to_sym
     @suit = initial_suit.to_sym
-    # The value 0 is reserved for the "blank" card
+    # Add one so that the value 0 can be reserved for the "blank" card
     @value = RANK_VALUES[rank] * N_SUITS + SUIT_VALUES[suit] + 1
     freeze
   end
@@ -97,15 +102,6 @@ class Card
   N_SUITS = SUIT_VALUES.size
 
   DECK_SIZE = N_RANKS * N_SUITS # does not include the blank card
-
-  # This will be useful in Board when we construct a hash, because
-  # we can construct a perfect hash if we simply shift card values
-  # by their position (i.e. in a column or foundation) and or them
-  # together.  Perhaps it's premature optimization, but hey, I can't
-  # help but think of things like this after all my poker work.
-  #
-  # The +1 is so we can represent a blank card with the value 0
-  CARD_BIT_WIDTH = Math.log2(DECK_SIZE + 1).ceil
 end
 
 # Represents the board of 8-off, which is the type of solitaire that
@@ -125,7 +121,7 @@ class Board
                 %i[5h tc 3s 8s 8d 9h],
                 %i[ts jd ac td 3d qc]].map { |y| cards(y) }
 
-    @cells = cards(%i[kc 2h 4c 4s])
+    @cells = cards(%i[kc 2h 4c 4s]) + [nil, nil, nil, nil]
 
     @foundations = [nil, nil, nil, nil]
   end
@@ -138,8 +134,28 @@ class Board
     end
   end
 
-  def hash
-    42 # TODO
+  # This gives a value that is really a binary representation of the
+  # canonical form of this Board.  Any Board that has this same hash
+  # is logically the same.  In theory, any board that is logically the
+  # same should also have this value, but that's a stricter constraint
+  # to enforce and it's probably not needed (I'll know more when I
+  # actually write the solver).
+  def hash # rubocop:disable AbcSize
+    foundation_values = sorted_values(foundations)
+    cell_values = sorted_values(cells)
+    sorted_column_values = columns.map { |c| c.map(&:value) }.sort
+    all_values = (foundation_values +
+                  cell_values +
+                  sorted_column_values.zip(COLUMN_SEPARATORS)).flatten
+    # The pop here is because our zip is going to leave a nil at the end
+    all_values.pop
+    all_values.each.with_index.inject(0) do |hash, (value, index)|
+      hash + (value << index * CARD_BIT_WIDTH)
+    end
+  end
+
+  def sorted_values(cards)
+    cards.map { |f| f&.value || 0 }.sort
   end
 
   def eql?(other)
@@ -182,9 +198,36 @@ class Board
 
   attr_reader :columns, :cells, :foundations
 
-  alias == eql?
+  # Two games that are logically the same, are not considered ==
+  # unless they look exactly the same.  So a solved game with spades
+  # as the top most foundation is going to be "eql?" to a solved games
+  # with hearts as the top most foundation, the two won't be
+  # considered "==".
+  def ==(other)
+    to_s == other.to_s
+  end
 
   private
+
+  # This is a value that never appears as a card and also isn't the
+  # value we use to represent the lack of a card.  It is used when
+  # we construct the hash so we can have columns of arbitrary length.
+  COLUMN_SEPARATOR_VALUE = Card::DECK_SIZE + 1
+
+  # We'll zip these into the columns so we can (numerically) keep them
+  # separate.
+  COLUMN_SEPARATORS = Array.new(N_COLUMNS - 1, COLUMN_SEPARATOR_VALUE).freeze
+  # This will be useful in Board when we construct a hash, because
+  # we can construct a perfect hash if we simply shift card values
+  # by their position (i.e. in a column or foundation) and or them
+  # together.  Perhaps it's premature optimization, but hey, I can't
+  # help but think of things like this after all my poker work.
+  #
+  # The +2 is so we can use any Card's value as well as
+  # Card::BLANK_VALUE as well as COLUMN_SEPARATOR_VALUE.
+  # These magic values are ugly and should go away, but it'll be easier
+  # to do that after specs are written.
+  CARD_BIT_WIDTH = Math.log2(Card::DECK_SIZE + 2).ceil
 
   def cards(arr)
     Array(arr).map { |symbol| Card.new(symbol) }
@@ -307,14 +350,18 @@ end
 
 b = Board.new
 b.check
+puts b.hash
 puts b.to_s
 bprime = Board.parse(StringIO.new(b.to_s))
 bprime.check
-raise 'b not equal to bprime' unless b == bprime # Meaningless for now
+raise 'b not == to bprime' unless b == bprime
+raise 'b not eql? to bprime' unless b.eql?(bprime)
 
 b2 = Board.parse(File.open('template'))
 b2.check
 puts b2.to_s
+puts b2.hash
 b2prime = Board.parse(StringIO.new(b2.to_s))
 b2prime.check
-raise 'b2 not equal to b2prime' unless b2 == b2prime # Meaningless for now
+raise 'b2 not == to b2prime' unless b2 == b2prime
+raise 'b2 not eql? to b2prime' unless b2.eql?(b2prime)
