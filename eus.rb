@@ -27,6 +27,11 @@
 # In reality, I'll only work on this in fits and starts and may never
 # do anything with it.
 
+# TODO: consider whether I want to be super consistent and use a blank
+#       card everywhere instead of nil to represent no card.  Currently
+#       I don't even *have* a blank card, although I do reserve the value
+#       0 for one.
+
 require 'pry'
 
 # Represents a card.  All cards are frozen.  Ruby comparison works as
@@ -40,7 +45,8 @@ class Card
 
     @rank = initial_rank.to_sym
     @suit = initial_suit.to_sym
-    @value = RANK_VALUES[rank] * N_SUITS + SUIT_VALUES[suit]
+    # The value 0 is reserved for the "blank" card
+    @value = RANK_VALUES[rank] * N_SUITS + SUIT_VALUES[suit] + 1
     freeze
   end
 
@@ -83,22 +89,28 @@ class Card
   RANK_VALUES = frozen_value_hash_factory['rank', 'a23456789tjqk']
   N_RANKS = RANK_VALUES.size
 
+  HIGHEST_RANK = RANK_VALUES.keys.last
+
+  VALUES_RANK = RANK_VALUES.invert.freeze
+
   SUIT_VALUES = frozen_value_hash_factory['suit', 'cdhs']
   N_SUITS = SUIT_VALUES.size
 
-  DECK_SIZE = N_RANKS * N_SUITS
+  DECK_SIZE = N_RANKS * N_SUITS # does not include the blank card
+
+  # This will be useful in Board when we construct a hash, because
+  # we can construct a perfect hash if we simply shift card values
+  # by their position (i.e. in a column or foundation) and or them
+  # together.  Perhaps it's premature optimization, but hey, I can't
+  # help but think of things like this after all my poker work.
+  #
+  # The +1 is so we can represent a blank card with the value 0
+  CARD_BIT_WIDTH = Math.log2(DECK_SIZE + 1).ceil
 end
 
 # Represents the board of 8-off, which is the type of solitaire that
 # you get on the demo version of Eric's Ultimate Solitaire, which can
 # be played at https://archive.org/details/executor
-#
-# NOTE: Initially we're making the foundation be a four element array
-#       where each element itself is an array of cards.  That's silly,
-#       because we really only need to know the top-most card.  As such,
-#       this representation should be changed fairly soon since it's
-#       ugly and was only done so that we could trivialy see if we
-#       had used all 52 cards as a sanity check.
 class Board
   N_COLUMNS = 8
 
@@ -115,7 +127,7 @@ class Board
 
     @cells = cards(%i[kc 2h 4c 4s])
 
-    @foundations = [[], [], [], []]
+    @foundations = [nil, nil, nil, nil]
   end
 
   def hash
@@ -131,13 +143,25 @@ class Board
   # once, although it does so based on the knowledge that there are
   # exactly Card::DECK_SIZE cards in the deck.
   def check
-    unless (columns + cells + foundations).flatten.uniq.size == Card::DECK_SIZE # rubocop:disable GuardClause, LineLength
+    unless (columns + cells + foundation_cards).flatten.uniq.size == Card::DECK_SIZE # rubocop:disable GuardClause, LineLength
       raise 'Incorrect number of cards'
     end
   end
 
+  # This is only used in consistency checking.  It returns all the cards
+  # that are in the foundation, by looking at the top card and generating
+  # cards for each implied card underneath it.  This is slow, but we rarely
+  # consistency check.
+  def foundation_cards
+    foundations.map do |foundation|
+      n_to_generate = foundation ? RANK_VALUES[foundation.rank] + 1 : 0
+      suit = foundation&.suit
+      Array.new(n_to_generate) { |rv| Card.new(VALUES_RANK[rv], suit) }
+    end
+  end
+
   def solved?
-    foundations.all? { |f| f.size == Card::N_RANKS }
+    foundations.all? { |f| f&.rank == Card::HIGHEST_RANK }
   end
 
   def to_s
@@ -194,11 +218,8 @@ class Board
     # the board rows.  No cards on the foundation will result in an
     # empty array being returned.
     def foundation_strings
-      (Array.new(FOUNDATION_ROW_OFFSET, '') + board.foundations.map do |f|
-        f.last.to_s
-      end).tap do |a|
-        a.pop while a.last&.empty?
-      end
+      (Array.new(FOUNDATION_ROW_OFFSET, '') +
+        board.foundations.map(&:to_s)).tap { |a| a.pop while a.last&.empty? }
     end
 
     FOUNDATION_ROW_OFFSET = 1
