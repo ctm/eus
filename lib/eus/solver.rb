@@ -16,8 +16,10 @@ module Eus
       return [] if board.solved?
 
       seen << board
-      column_to_card_column || column_to_empty_column || column_to_cell ||
-        cell_to_column
+      catch :solution do
+        column_to_card_column || column_to_empty_column || column_to_cell ||
+          cell_to_column
+      end
     end
 
     private
@@ -67,7 +69,7 @@ module Eus
       STDERR.puts "New board(#{new_board.object_id}):\n#{new_board}\n"
 
       solution = Solver.new(new_board, seen, depth + 1).solve
-      [method, from, to] + solution if solution
+      throw :solution, [method, from, to] + solution if solution
     end
 
     def empty_column_index

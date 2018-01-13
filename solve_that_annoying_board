@@ -10,5 +10,5 @@ $LOAD_PATH.unshift(Pathname.new(__dir__) + 'lib/eus')
 
 require 'solver'
 solution =
-  Eus::Solver.new((Pathname.new(__dir__) + 'boards/solvable').open).solve
+  Eus::Solver.new((Pathname.new(__dir__) + 'boards/annoyingly_hard').open).solve
 puts solution.inspect
