@@ -29,18 +29,22 @@ module Eus
       freeze
     end
 
+    attr_reader :rank, :suit, :value, :rank_value
+
     def eql?(other)
       other.hash == hash
     end
+
+    alias hash value
+    alias == eql?
 
     def to_s
       "#{rank}#{suit}".upcase
     end
 
-    attr_reader :rank, :suit, :value, :rank_value
-
-    alias hash value
-    alias == eql?
+    def plays_on_top_of?(other)
+      suit == other.suit && rank_value == other.rank_value - 1
+    end
 
     private
 

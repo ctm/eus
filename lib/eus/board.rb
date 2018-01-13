@@ -110,42 +110,103 @@ module Eus
       to_s == other.to_s
     end
 
-    # returns a new board if a card has successfully been moved from
-    # the from index to the to index
-    def move(from, to) # rubocop:disable AbcSize, CyclomaticComplexity, MethodLength, PerceivedComplexity, LineLength
-      return nil if from == to
-      return nil unless (card = card_at(from))
-      return nil unless playable?(card, to)
+    # TODO: move the motion code either to a helper class or to a module
+    #       that is included, but get it out of here
+    def move_column_to_card_column(from, to)
+      return nil unless (card = columns[from].last)
+      return nil unless (to_card = columns[to].last)
+      return nil unless card.plays_on_top_of?(to_card)
 
-      (frozen? ? dup : self).tap do |new_board|
-        new_board.instance_eval do
-          if from < N_COLUMNS
-            @columns = columns.dup
-            columns[from] = columns[from].dup
-            columns[from].pop
-          else
-            @cells = cells.dup
-            cells[from - N_COLUMNS] = nil
-          end
+      new_column_to_column_board(card, from, to)
+    end
 
-          if to < N_COLUMNS
-            @columns = columns.dup if columns.frozen?
-            columns[to] = columns[to].dup
-            columns[to].push card
-          else
-            @cells = cells.dup
-            cells[to - N_COLUMNS] = card
-          end
-        end
+    def move_column_to_empty_column(from, to)
+      return nil unless (card = columns[from].last)
 
-        changed = true
-        changed = new_board.do_automatic_moves while changed
-        new_board.check
-        new_board.deep_freeze
+      new_column_to_column_board(card, from, to)
+    end
+
+    def move_column_to_cell(from, to)
+      return nil unless (card = columns[from].last)
+
+      new_board do
+        unlock_columns from
+        unlock_cells
+
+        columns[from].pop
+        cells[to] = card
       end
     end
 
+    def move_cell_to_column(from, to)
+      return nil unless (card = cells[from])
+      return nil unless (to_card = columns[to].last)
+      return nil unless card.plays_on_top_of?(to_card)
+
+      new_board do
+        unlock_columns to
+        unlock_cells
+
+        cells[from] = nil
+        columns[to].push card
+      end
+    end
+
+    private
+
+    # This is a value that never appears as a card and also isn't the
+    # value we use to represent the lack of a card.  It is used when
+    # we construct the hash so we can have columns of arbitrary length.
+    COLUMN_SEPARATOR_VALUE = Card::DECK_SIZE + 1
+
+    # We'll zip these into the columns so we can (numerically) keep them
+    # separate.
+    COLUMN_SEPARATORS = Array.new(N_COLUMNS - 1, COLUMN_SEPARATOR_VALUE).freeze
+
+    # The +2 is so we can use any Card's value as well as
+    # Card::BLANK_VALUE as well as COLUMN_SEPARATOR_VALUE.  Those two
+    # magic values are ugly and should go away, but it'll be easier to
+    # do that after specs are written.
+    CARD_BIT_WIDTH = Math.log2(Card::DECK_SIZE + 2).ceil
+
+    def new_column_to_column_board(card, from, to)
+      new_board do
+        unlock_columns from, to
+        columns[from].pop
+        columns[to].push card
+      end
+    end
+
+    def unlock_columns(*column_indexes)
+      @columns = columns.dup if columns.frozen?
+      column_indexes.each do |index|
+        column = columns[index]
+        columns[index] = column.dup if column.frozen?
+      end
+    end
+
+    def unlock_cells
+      @cells = cells.dup if cells.frozen?
+    end
+
+    def new_board(&block)
+      dup.tap do |new_board|
+        new_board.instance_eval do
+          instance_eval &block # rubocop:disable AmbiguousOperator
+
+          changed = true
+          changed = do_automatic_moves while changed
+        end
+      end
+    end
+
+    # This will only be called by a board that is not frozen
     def do_automatic_moves # rubocop:disable AbcSize, MethodLength
+      require 'pry'; binding.pry # rubocop:disable Semicolon, Debugger
+      # TODO: rewrite this entirely.  I haven't looked at it since
+      #       I rewrote the motion code.  Not only is it likely to
+      #       be crazy inefficient, but it is probably not even
+      #       useful as a start.
       needed = foundations.each.with_index.map do |card, index|
         if card
           suit = card.suit
@@ -170,23 +231,6 @@ module Eus
         end
       end
     end
-
-    private
-
-    # This is a value that never appears as a card and also isn't the
-    # value we use to represent the lack of a card.  It is used when
-    # we construct the hash so we can have columns of arbitrary length.
-    COLUMN_SEPARATOR_VALUE = Card::DECK_SIZE + 1
-
-    # We'll zip these into the columns so we can (numerically) keep them
-    # separate.
-    COLUMN_SEPARATORS = Array.new(N_COLUMNS - 1, COLUMN_SEPARATOR_VALUE).freeze
-
-    # The +2 is so we can use any Card's value as well as
-    # Card::BLANK_VALUE as well as COLUMN_SEPARATOR_VALUE.  Those two
-    # magic values are ugly and should go away, but it'll be easier to
-    # do that after specs are written.
-    CARD_BIT_WIDTH = Math.log2(Card::DECK_SIZE + 2).ceil
 
     def cards(arr)
       Array(arr).map { |symbol| Card.new(symbol) }

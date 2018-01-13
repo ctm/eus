@@ -53,7 +53,7 @@ module Eus
     def cell_to_column
       CELL_INDEXES.any? do |from|
         CARD_COLUMN_INDEXES.any? do |to|
-          helper(:move_cell_to_colunn, from, to)
+          helper(:move_cell_to_column, from, to)
         end
       end
     end
@@ -70,7 +70,7 @@ module Eus
 
     def empty_column_index
       @empty_column_index ||= CARD_COLUMN_INDEXES.detect do |index|
-        board.columns[index].nil?
+        board.columns[index].empty?
       end
     end
 
