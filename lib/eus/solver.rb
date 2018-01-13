@@ -63,6 +63,8 @@ module Eus
       return nil if seen.include?(new_board)
 
       STDERR.puts "#{depth}: #{method}(#{from}, #{to})"
+      STDERR.puts "Old board(#{board.object_id}):\n#{board}\n"
+      STDERR.puts "New board(#{new_board.object_id}):\n#{new_board}\n"
 
       solution = Solver.new(new_board, seen, depth + 1).solve
       [method, from, to] + solution if solution

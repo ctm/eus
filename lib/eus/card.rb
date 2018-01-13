@@ -47,7 +47,7 @@ module Eus
     end
 
     def next
-      if rank_value == HIGHEST_RANK
+      if rank == HIGHEST_RANK
         nil
       else
         self.class.new(VALUES_RANK[rank_value + 1], suit)

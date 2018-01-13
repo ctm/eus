@@ -25,7 +25,7 @@ module Eus
       @columns = columns
       @cells = cells
       @foundations = foundations
-      check
+      check # DO NOT COMMIT
     end
 
     def self.parse(string_or_io)
@@ -37,8 +37,8 @@ module Eus
       columns.freeze
       cells.freeze
       foundations.freeze
+      foundation_map.freeze
       check # DO NOT COMMIT
-      puts to_s # DO NOT COMMIT
       freeze
     end
 
@@ -85,6 +85,7 @@ module Eus
       all = (columns + cells.compact + foundation_cards).flatten
 
       unless all.size == Card::DECK_SIZE
+        require 'pry'; binding.pry # rubocop:disable Semicolon, Debugger
         raise "Expected #{Card::DECK_SIZE} cards, got #{all.size}"
       end
 
@@ -201,31 +202,41 @@ module Eus
       @cells = cells.dup if cells.frozen?
     end
 
+    def unlock_foundations
+      @foundations = foundations.dup if foundations.frozen?
+    end
+
     # TODO: document how thi interacts with the block
     def new_board(&block)
-      dup.tap do |new_board|
-        new_board.instance_eval do
+      dup.tap do |nb|
+        nb.instance_eval do
           instance_eval &block # rubocop:disable AmbiguousOperator
 
+          check
           do_automatic_moves
+          deep_freeze # rubocop:disable LineLength NOTE: if this works, we might take it out elsewhere, but this one is probably redundant
         end
       end
     end
 
     # This will only be called by a board that is not frozen
     def do_automatic_moves
+      STDERR.puts "into automatic_moves (#{object_id}):\n#{self}\n"
       while column_automatic_move || cell_automatic_move
       end
     end
 
     def column_automatic_move
       CARD_COLUMN_INDEXES.any? do |index|
+        check
         next false unless (card = columns[index]&.last)
-        next false unless (foundation_index = foundation_map[card])
+        next false unless (foundation_index = foundation_map[card.value])
 
         unlock_columns index
         columns[index].pop
         place_foundation foundation_index, card
+        STDERR.puts "after column_automatic_move (#{object_id}):\n#{self}\n"
+        check
         true
       end
     end
@@ -233,11 +244,13 @@ module Eus
     def cell_automatic_move
       CELL_INDEXES.any? do |index|
         next false unless (card = cells[index])
-        next false unless (foundation_index = foundation_map[card])
+        next false unless (foundation_index = foundation_map[card.value])
 
         unlock_cells
         cells[index] = nil
         place_foundation foundation_index, card
+        STDERR.puts "after cell_automatic_move (#{object_id}):\n#{self}\n"
+        check
         true
       end
     end
@@ -246,16 +259,22 @@ module Eus
       @foundation_map ||= foundations.each
                                      .with_index
                                      .with_object({}) do |(card, index), h|
-        h[index] = card&.next || Card.foundation_card_for_index(index)
+        h[(card&.next || Card.foundation_card_for_index(index)).value] = index
       end
     end
 
     def place_foundation(index, card)
-      unlock_foundation
+      unlock_foundations
+      foundations[index] = card
 
-      foundation[index] = card
+      unlock_foundation_map
       foundation_map.delete(card)
-      foundation_map[card.next] = index
+      return unless (next_card = card.next)
+      foundation_map[next_card.value] = index
+    end
+
+    def unlock_foundation_map
+      @foundation_map = @foundation_map.dup if foundation_map.frozen?
     end
 
     def cards(arr)
