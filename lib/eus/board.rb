@@ -15,6 +15,7 @@ module Eus
       @columns = columns
       @cells = cells
       @foundations = foundations
+      check
     end
 
     def self.parse(string_or_io)
@@ -124,7 +125,7 @@ module Eus
             columns[from].pop
           else
             @cells = cells.dup
-            cells[to - N_COLUMNS] = nil
+            cells[from - N_COLUMNS] = nil
           end
 
           if to < N_COLUMNS
@@ -139,6 +140,8 @@ module Eus
 
         changed = true
         changed = new_board.do_automatic_moves while changed
+        new_board.check
+        new_board.deep_freeze
       end
     end
 
@@ -201,7 +204,7 @@ module Eus
       return true unless (base_card = card_at(position))
 
       position < N_COLUMNS && base_card.suit == card.suit &&
-        base_card.rank == card.rank_value + 1
+        base_card.rank_value == card.rank_value + 1
     end
   end
 end
