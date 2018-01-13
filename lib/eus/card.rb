@@ -23,8 +23,9 @@ module Eus
 
       @rank = initial_rank.to_sym
       @suit = initial_suit.to_sym
+      @rank_value = RANK_VALUES[rank]
       # Add one so that the value 0 can be reserved for the "blank" card
-      @value = RANK_VALUES[rank] * N_SUITS + SUIT_VALUES[suit] + 1
+      @value = rank_value * N_SUITS + SUIT_VALUES[suit] + 1
       freeze
     end
 
@@ -36,7 +37,7 @@ module Eus
       "#{rank}#{suit}".upcase
     end
 
-    attr_reader :rank, :suit, :value
+    attr_reader :rank, :suit, :value, :rank_value
 
     alias hash value
     alias == eql?
@@ -71,7 +72,9 @@ module Eus
 
     VALUES_RANK = RANK_VALUES.invert.freeze
 
-    SUIT_VALUES = frozen_value_hash_factory['suit', 'cdhs']
+    # Suit order is slightly important.  We want the values to represent
+    # the foundation suits from top to bottom.
+    SUIT_VALUES = frozen_value_hash_factory['suit', 'scdh']
     N_SUITS = SUIT_VALUES.size
 
     DECK_SIZE = N_RANKS * N_SUITS # does not include the blank card

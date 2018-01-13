@@ -1,24 +1,32 @@
 # frozen_string_literal: true
 
+require 'card'
+
 module Eus
   # Represents the board of 8-off, which is the type of solitaire that
   # you get on the demo version of Eric's Ultimate Solitaire, which can
   # be played at https://archive.org/details/executor
-  class Board
+  class Board # rubocop:disable ClassLength
     N_COLUMNS = 8
 
-    # This hard-codes a game that I had trouble solving manually.
-    def initialize
-      # TODO
+    # Boards are initially mutable but are deep frozen when solving to make
+    # sure their not mutated at inopportune times.
+    def initialize(columns, cells, foundations)
+      @columns = columns
+      @cells = cells
+      @foundations = foundations
     end
 
     def self.parse(string_or_io)
-      # TODO: get rid of this instance eval.  UGH!
-      new.tap do |t|
-        t.instance_eval do
-          @columns, @cells, @foundations = Parser.new(string_or_io).parse
-        end
-      end
+      new(*Parser.new(string_or_io).parse)
+    end
+
+    def deep_freeze
+      columns.each(&:freeze)
+      columns.freeze
+      cells.freeze
+      foundations.freeze
+      freeze
     end
 
     # This gives a value that is really a binary representation of the
@@ -28,8 +36,15 @@ module Eus
     # to enforce and it's probably not needed (I'll know more when I
     # actually write the solver).
     def hash # rubocop:disable AbcSize
-      foundation_values = sorted_values(foundations)
-      cell_values = sorted_values(cells)
+      # We don't sort the foundation_values, because the suits (which
+      # are in a fixed order) are important.
+      foundation_values = values(foundations)
+      # We *do* sort the cell_values, because where they are on the board
+      # doesn't matter
+      cell_values = values(cells).sort
+      # Similarly, we sort the columns, because although the contents of
+      # each individual column is important, the arrangement of the columns
+      # themselves isn't.
       sorted_column_values = columns.map { |c| c.map(&:value) }.sort
       all_values = (foundation_values +
                     cell_values +
@@ -41,8 +56,8 @@ module Eus
       end
     end
 
-    def sorted_values(cards)
-      cards.map { |f| f&.value || Card::BLANK_VALUE }.sort
+    def values(cards)
+      cards.map { |f| f&.value || Card::BLANK_VALUE }
     end
 
     def eql?(other)
@@ -94,6 +109,65 @@ module Eus
       to_s == other.to_s
     end
 
+    # returns a new board if a card has successfully been moved from
+    # the from index to the to index
+    def move(from, to) # rubocop:disable AbcSize, CyclomaticComplexity, MethodLength, PerceivedComplexity, LineLength
+      return nil if from == to
+      return nil unless (card = card_at(from))
+      return nil unless playable?(card, to)
+
+      (frozen? ? dup : self).tap do |new_board|
+        new_board.instance_eval do
+          if from < N_COLUMNS
+            @columns = columns.dup
+            columns[from] = columns[from].dup
+            columns[from].pop
+          else
+            @cells = cells.dup
+            cells[to - N_COLUMNS] = nil
+          end
+
+          if to < N_COLUMNS
+            @columns = columns.dup if columns.frozen?
+            columns[to] = columns[to].dup
+            columns[to].push card
+          else
+            @cells = cells.dup
+            cells[to - N_COLUMNS] = card
+          end
+        end
+
+        changed = true
+        changed = new_board.do_automatic_moves while changed
+      end
+    end
+
+    def do_automatic_moves # rubocop:disable AbcSize, MethodLength
+      needed = foundations.each.with_index.map do |card, index|
+        if card
+          suit = card.suit
+          rank_value = card.rank_value + 1
+        else
+          suit = Card::SUIT_VALUES.keys[index]
+          rank_value = 0
+        end
+        if rank_value < Card::N_RANKS
+          Card.new(Card::RANK_VALUES.keys[rank_value], suit)
+        end
+      end
+
+      Solver::SOURCE_INDEXES.any? do |from|
+        next false unless (card = card_at(from))
+        needed.include?(card).tap do |got_one|
+          if got_one
+            # TODO: move the card to the foundation, although move
+            #       doesn't currently do that
+            require 'pry'; binding.pry # rubocop:disable Semicolon, Debugger
+          end
+        end
+      end
+    end
+
     private
 
     # This is a value that never appears as a card and also isn't the
@@ -114,8 +188,23 @@ module Eus
     def cards(arr)
       Array(arr).map { |symbol| Card.new(symbol) }
     end
+
+    def card_at(position)
+      if position < N_COLUMNS
+        columns[position]&.last
+      else
+        cells[position - N_COLUMNS]
+      end
+    end
+
+    def playable?(card, position)
+      return true unless (base_card = card_at(position))
+
+      position < N_COLUMNS && base_card.suit == card.suit &&
+        base_card.rank == card.rank_value + 1
+    end
   end
 end
 
-require_relative 'board/presenter'
-require_relative 'board/parser'
+require 'board/presenter'
+require 'board/parser'
