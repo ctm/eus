@@ -46,6 +46,18 @@ module Eus
       suit == other.suit && rank_value == other.rank_value - 1
     end
 
+    def next
+      if rank_value == HIGHEST_RANK
+        nil
+      else
+        self.class.new(VALUES_RANK[rank_value + 1], suit)
+      end
+    end
+
+    def self.foundation_card_for_index(index)
+      new(LOWEST_RANK, VALUES_SUIT[index])
+    end
+
     private
 
     def extract_rank_and_suit(card_or_rank, optional_suit)
@@ -72,6 +84,8 @@ module Eus
     RANK_VALUES = frozen_value_hash_factory['rank', 'a23456789tjqk']
     N_RANKS = RANK_VALUES.size
 
+    LOWEST_RANK = RANK_VALUES.keys.first
+
     HIGHEST_RANK = RANK_VALUES.keys.last
 
     VALUES_RANK = RANK_VALUES.invert.freeze
@@ -80,6 +94,9 @@ module Eus
     # the foundation suits from top to bottom.
     SUIT_VALUES = frozen_value_hash_factory['suit', 'scdh']
     N_SUITS = SUIT_VALUES.size
+
+    VALUES_SUIT = SUIT_VALUES.invert.freeze
+    private_constant :VALUES_SUIT
 
     DECK_SIZE = N_RANKS * N_SUITS # does not include the blank card
   end

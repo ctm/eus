@@ -9,6 +9,16 @@ module Eus
   class Board # rubocop:disable ClassLength
     N_COLUMNS = 8
 
+    # TODO: better name for these two constants; they're generators.
+    CARD_COLUMN_INDEXES = (0...Board::N_COLUMNS).each
+    CARD_COLUMN_INDEXES.freeze
+
+    # The following relies on there being the same number of cells as there
+    # are columns.  It might be better to have a separate constant for the
+    # number of cells, but I don't think we've done that elsewhere :-(
+    CELL_INDEXES = (0...Board::N_COLUMNS).each
+    CELL_INDEXES.freeze
+
     # Boards are initially mutable but are deep frozen when solving to make
     # sure their not mutated at inopportune times.
     def initialize(columns, cells, foundations)
@@ -27,6 +37,8 @@ module Eus
       columns.freeze
       cells.freeze
       foundations.freeze
+      check # DO NOT COMMIT
+      puts to_s # DO NOT COMMIT
       freeze
     end
 
@@ -189,47 +201,61 @@ module Eus
       @cells = cells.dup if cells.frozen?
     end
 
+    # TODO: document how thi interacts with the block
     def new_board(&block)
       dup.tap do |new_board|
         new_board.instance_eval do
           instance_eval &block # rubocop:disable AmbiguousOperator
 
-          changed = true
-          changed = do_automatic_moves while changed
+          do_automatic_moves
         end
       end
     end
 
     # This will only be called by a board that is not frozen
-    def do_automatic_moves # rubocop:disable AbcSize, MethodLength
-      require 'pry'; binding.pry # rubocop:disable Semicolon, Debugger
-      # TODO: rewrite this entirely.  I haven't looked at it since
-      #       I rewrote the motion code.  Not only is it likely to
-      #       be crazy inefficient, but it is probably not even
-      #       useful as a start.
-      needed = foundations.each.with_index.map do |card, index|
-        if card
-          suit = card.suit
-          rank_value = card.rank_value + 1
-        else
-          suit = Card::SUIT_VALUES.keys[index]
-          rank_value = 0
-        end
-        if rank_value < Card::N_RANKS
-          Card.new(Card::RANK_VALUES.keys[rank_value], suit)
-        end
+    def do_automatic_moves
+      while column_automatic_move || cell_automatic_move
       end
+    end
 
-      Solver::SOURCE_INDEXES.any? do |from|
-        next false unless (card = card_at(from))
-        needed.include?(card).tap do |got_one|
-          if got_one
-            # TODO: move the card to the foundation, although move
-            #       doesn't currently do that
-            require 'pry'; binding.pry # rubocop:disable Semicolon, Debugger
-          end
-        end
+    def column_automatic_move
+      CARD_COLUMN_INDEXES.any? do |index|
+        next false unless (card = columns[index]&.last)
+        next false unless (foundation_index = foundation_map[card])
+
+        unlock_columns index
+        columns[index].pop
+        place_foundation foundation_index, card
+        true
       end
+    end
+
+    def cell_automatic_move
+      CELL_INDEXES.any? do |index|
+        next false unless (card = cells[index])
+        next false unless (foundation_index = foundation_map[card])
+
+        unlock_cells
+        cells[index] = nil
+        place_foundation foundation_index, card
+        true
+      end
+    end
+
+    def foundation_map
+      @foundation_map ||= foundations.each
+                                     .with_index
+                                     .with_object({}) do |(card, index), h|
+        h[index] = card&.next || Card.foundation_card_for_index(index)
+      end
+    end
+
+    def place_foundation(index, card)
+      unlock_foundation
+
+      foundation[index] = card
+      foundation_map.delete(card)
+      foundation_map[card.next] = index
     end
 
     def cards(arr)
