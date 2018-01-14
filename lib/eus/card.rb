@@ -23,7 +23,6 @@ module Eus
     # have the public ones.
 
     RANK_VALUES = frozen_value_hash_factory['rank', 'a23456789tjqk']
-    private_constant :RANK_VALUES
 
     N_RANKS = RANK_VALUES.size
     private_constant :N_RANKS
@@ -34,7 +33,6 @@ module Eus
     HIGHEST_RANK = RANK_VALUES.keys.last
 
     VALUES_RANK = RANK_VALUES.invert.freeze
-    private_constant :VALUES_RANK
 
     # Suit order is slightly important.  We want the values to represent
     # the foundation suits from top to bottom.

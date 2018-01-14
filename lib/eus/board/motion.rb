@@ -30,18 +30,18 @@ module Eus
         end
       end
 
-      def move_cell_to_column(from, to)
+      def move_cell_to_card_column(from, to)
         return nil unless (card = cells[from])
         return nil unless (to_card = columns[to].last)
         return nil unless card.plays_on_top_of?(to_card)
 
-        new_board do
-          unlock_columns to
-          unlock_cells
+        new_cell_to_column_board(card, from, to)
+      end
 
-          cells[from] = nil
-          columns[to].push card
-        end
+      def move_cell_to_empty_column(from, to)
+        return nil unless (card = cells[from])
+
+        new_cell_to_column_board(card, from, to)
       end
 
       private
@@ -50,6 +50,16 @@ module Eus
         new_board do
           unlock_columns from, to
           columns[from].pop
+          columns[to].push card
+        end
+      end
+
+      def new_cell_to_column_board(card, from, to)
+        new_board do
+          unlock_columns to
+          unlock_cells
+
+          cells[from] = nil
           columns[to].push card
         end
       end

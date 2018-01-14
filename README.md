@@ -40,13 +40,13 @@ asked it to solve that board and I got a stack overflow.  On macOS
 bash-3.2[master]$ ulimit -s 16384
 bash-3.2[master]$ time RUBY_THREAD_VM_STACK_SIZE=4194304 ./solve < boards/annoyingly_hard > annoying_solution
 
-real	0m3.605s
-user	0m3.526s
-sys	0m0.061s
+real	0m1.331s
+user	0m1.266s
+sys	0m0.049s
 bash-3.2[master]$ wc -l annoying_solution 
-    2335 annoying_solution
+    1773 annoying_solution
 ```
-That solution has 2,335 steps, although the solver doesn't know about
+That solution has 1,773 steps, although the solver doesn't know about
 the shortcut of being able to move a stack of `N` cards from column to
 column if there are at least `N-1` cells available.  More importantly, the
 solver stops when it finds its first solution, so its first solution is likely
@@ -60,20 +60,14 @@ to `puts` which can be added to the code if you want to see the boards change.
 
 The first element of a step triple is one of
 `:move_column_to_card_column`, `:move_column_to_empty_column`,
-`:move_column_to_cell` or `:move_cell_to_column`.  They two remaining
-elements of a step triple are the `from` and `to` values, each of
-which is zero based.
+`:move_column_to_cell`, `:move_cell_to_card_column` or
+`:move_cell_to_empty_column`.  They two remaining elements of a step
+triple are the `from` and `to` values, each of which is zero based.
 
 |command|description|
 |-------|-----------|
 |`:move_column_to_card_column`|move a card from one column to another column that has at least one card in it|
 |`:move_column_to_empty_column`|move a card from a column to an empty column|
 |`:move_column_to_cell`|move a card from a column to an empty cell|
-|`:move_cell_to_column`|move a card from a cell to a column which may be empty or may have one or more cards in it|
-
-As you can see, the software makes the distinction between moving from
-a column to a column that has one or more cards in it and moving from
-a column to an empty column, but it makes no such distinction when
-moving from a cell.  That inconsistency is merely a reflection of my having
-put very little effort into thinking about this before coding it up.
-
+|`:move_cell_to_card_column`|move a card from a cell to a column which has at least one card in it|
+|`:move_cell_to_empty_column`|move a card from a cell to a column which is empty|

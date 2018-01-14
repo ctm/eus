@@ -2,11 +2,8 @@
 
 # frozen_string_literal: true
 
-require 'pathname'
 require 'pp'
 
-$LOAD_PATH.unshift(Pathname.new(__dir__) + 'lib/eus')
-
-require 'solver'
+require_relative 'lib/eus/solver'
 
 PP.pp Eus::Solver.new(STDIN).solve

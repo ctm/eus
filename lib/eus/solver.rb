@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'set'
-require 'board'
+require_relative 'board'
 
 module Eus
   class Solver # rubocop:disable Documentation
@@ -22,7 +22,7 @@ module Eus
       seen << board.hash
       catch :solution do
         column_to_card_column || column_to_empty_column || column_to_cell ||
-          cell_to_column
+          cell_to_card_column || cell_to_empty_column
       end
     end
 
@@ -56,11 +56,19 @@ module Eus
       end
     end
 
-    def cell_to_column
+    def cell_to_card_column
       Board::CELL_INDEXES.any? do |from|
         Board::CARD_COLUMN_INDEXES.any? do |to|
-          helper(:move_cell_to_column, from, to)
+          helper(:move_cell_to_card_column, from, to)
         end
+      end
+    end
+
+    def cell_to_empty_column
+      return nil unless (to = empty_column_index)
+
+      Board::CELL_INDEXES.any? do |from|
+        helper(:move_cell_to_empty_column, from, to)
       end
     end
 
