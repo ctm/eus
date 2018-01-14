@@ -31,12 +31,14 @@ that problem by a combination of `ulimit -s 16384` and
 
 ```
 bash-3.2[master]$ ulimit -s 16384
-bash-3.2[master]$ time RUBY_THREAD_VM_STACK_SIZE=4194304 ./solve_that_annoying_board > annoying_solution
+bash-3.2[master]$ time RUBY_THREAD_VM_STACK_SIZE=4194304 ./solve < boards/annoyingly_hard > annoying_solution
 
-real	3m5.691s
-user	3m4.531s
-sys	0m0.608s
+real	0m3.605s
+user	0m3.526s
+sys	0m0.061s
+bash-3.2[master]$ wc -l annoying_solution 
+    2335 annoying_solution
 ```
-FWIW, that solution has 2,335 steps, although the solver doesn't know
-about the shortcut of being able to move a stack of N cards from column
-to column if there are at least N-1 cells available.
+That solution has 2,335 steps, although the solver doesn't know about
+the shortcut of being able to move a stack of N cards from column to
+column if there are at least N-1 cells available.

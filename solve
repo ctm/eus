@@ -1,0 +1,12 @@
+#! /usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require 'pathname'
+require 'pp'
+
+$LOAD_PATH.unshift(Pathname.new(__dir__) + 'lib/eus')
+
+require 'solver'
+
+PP.pp Eus::Solver.new(STDIN).solve

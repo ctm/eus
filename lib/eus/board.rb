@@ -200,7 +200,10 @@ module Eus
       @foundations = foundations.dup if foundations.frozen?
     end
 
-    # TODO: document how this interacts with the block
+    # Creates a new board and then runs instance evals &block inside
+    # it so that all the methods called inside block are done in the
+    # new board.  After that, all the automatic moves are done (just
+    # like in the game).
     def new_board(&block)
       dup.tap do |nb|
         nb.instance_eval do

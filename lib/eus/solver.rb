@@ -63,7 +63,7 @@ module Eus
       return nil if seen.include?(new_board.hash)
 
       solution = Solver.new(new_board, seen).solve
-      throw :solution, [method, from, to] + solution if solution
+      throw :solution, solution.unshift([method, from, to]) if solution
     end
 
     def empty_column_index
