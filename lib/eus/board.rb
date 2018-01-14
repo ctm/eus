@@ -9,15 +9,12 @@ module Eus
   class Board # rubocop:disable ClassLength
     N_COLUMNS = 8
 
-    # TODO: better name for these two constants; they're generators.
-    CARD_COLUMN_INDEXES = (0...Board::N_COLUMNS).each
-    CARD_COLUMN_INDEXES.freeze
+    CARD_COLUMN_INDEXES = (0...Board::N_COLUMNS).freeze
 
     # The following relies on there being the same number of cells as there
     # are columns.  It might be better to have a separate constant for the
     # number of cells, but I don't think we've done that elsewhere :-(
-    CELL_INDEXES = (0...Board::N_COLUMNS).each
-    CELL_INDEXES.freeze
+    CELL_INDEXES = (0...Board::N_COLUMNS).freeze
 
     # Boards are initially mutable but are deep frozen when solving to make
     # sure their not mutated at inopportune times.
@@ -44,8 +41,7 @@ module Eus
     # canonical form of this Board.  Any Board that has this same hash
     # is logically the same.  In theory, any board that is logically the
     # same should also have this value, but that's a stricter constraint
-    # to enforce and it's probably not needed (I'll know more when I
-    # actually write the solver).
+    # to enforce and it hasn't been needed so far.
     def hash # rubocop:disable AbcSize
       # We don't sort the foundation_values, because the suits (which
       # are in a fixed order) are important.
@@ -211,7 +207,6 @@ module Eus
           instance_eval &block # rubocop:disable AmbiguousOperator
 
           do_automatic_moves
-          deep_freeze # rubocop:disable LineLength NOTE: if this works, we might take it out elsewhere, but this one is probably redundant
         end
       end
     end

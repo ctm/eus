@@ -40,6 +40,3 @@ sys	0m0.608s
 FWIW, that solution has 2,335 steps, although the solver doesn't know
 about the shortcut of being able to move a stack of N cards from column
 to column if there are at least N-1 cells available.
-
-TODO: find the proper terminology for cells.  I think solitaire has a name
-for those things.
