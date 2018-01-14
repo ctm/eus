@@ -25,7 +25,6 @@ module Eus
       @columns = columns
       @cells = cells
       @foundations = foundations
-      check # DO NOT COMMIT
     end
 
     def self.parse(string_or_io)
@@ -38,7 +37,6 @@ module Eus
       cells.freeze
       foundations.freeze
       foundation_map.freeze
-      check # DO NOT COMMIT
       freeze
     end
 
@@ -206,13 +204,12 @@ module Eus
       @foundations = foundations.dup if foundations.frozen?
     end
 
-    # TODO: document how thi interacts with the block
+    # TODO: document how this interacts with the block
     def new_board(&block)
       dup.tap do |nb|
         nb.instance_eval do
           instance_eval &block # rubocop:disable AmbiguousOperator
 
-          check
           do_automatic_moves
           deep_freeze # rubocop:disable LineLength NOTE: if this works, we might take it out elsewhere, but this one is probably redundant
         end
@@ -221,22 +218,18 @@ module Eus
 
     # This will only be called by a board that is not frozen
     def do_automatic_moves
-      STDERR.puts "into automatic_moves (#{object_id}):\n#{self}\n"
       while column_automatic_move || cell_automatic_move
       end
     end
 
     def column_automatic_move
       CARD_COLUMN_INDEXES.any? do |index|
-        check
         next false unless (card = columns[index]&.last)
         next false unless (foundation_index = foundation_map[card.value])
 
         unlock_columns index
         columns[index].pop
         place_foundation foundation_index, card
-        STDERR.puts "after column_automatic_move (#{object_id}):\n#{self}\n"
-        check
         true
       end
     end
@@ -249,8 +242,6 @@ module Eus
         unlock_cells
         cells[index] = nil
         place_foundation foundation_index, card
-        STDERR.puts "after cell_automatic_move (#{object_id}):\n#{self}\n"
-        check
         true
       end
     end

@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-# TODO: consider whether I want to be super consistent and use a blank
-#       card everywhere instead of nil to represent no card.  Currently
-#       I don't even *have* a blank card, although I do reserve the value
-#       0 for one.
-
 module Eus
   # Represents a card.  All cards are frozen.  Ruby comparison works
   # as expected.  #to_s is compact, but #inspect still shows the

@@ -5,11 +5,9 @@ require 'board'
 
 module Eus
   class Solver # rubocop:disable Documentation
-    # TODO: remove depth once we're comfortable everything works right
-    def initialize(source, seen = Set.new, depth = 0)
+    def initialize(source, seen = Set.new)
       @board = (source.is_a?(Board) ? source : Board.parse(source)).deep_freeze
       @seen = seen
-      @depth = depth
     end
 
     def solve
@@ -24,7 +22,7 @@ module Eus
 
     private
 
-    attr_reader :board, :seen, :depth
+    attr_reader :board, :seen
 
     def column_to_card_column
       Board::CARD_COLUMN_INDEXES.any? do |from|
@@ -64,11 +62,7 @@ module Eus
       return nil unless (new_board = board.send(method, from, to))
       return nil if seen.include?(new_board)
 
-      STDERR.puts "#{depth}: #{method}(#{from}, #{to})"
-      STDERR.puts "Old board(#{board.object_id}):\n#{board}\n"
-      STDERR.puts "New board(#{new_board.object_id}):\n#{new_board}\n"
-
-      solution = Solver.new(new_board, seen, depth + 1).solve
+      solution = Solver.new(new_board, seen).solve
       throw :solution, [method, from, to] + solution if solution
     end
 
