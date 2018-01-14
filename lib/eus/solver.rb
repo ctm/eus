@@ -13,7 +13,7 @@ module Eus
     def solve
       return [] if board.solved?
 
-      seen << board
+      seen << board.hash
       catch :solution do
         column_to_card_column || column_to_empty_column || column_to_cell ||
           cell_to_column
@@ -60,7 +60,7 @@ module Eus
 
     def helper(method, from, to)
       return nil unless (new_board = board.send(method, from, to))
-      return nil if seen.include?(new_board)
+      return nil if seen.include?(new_board.hash)
 
       solution = Solver.new(new_board, seen).solve
       throw :solution, [method, from, to] + solution if solution
