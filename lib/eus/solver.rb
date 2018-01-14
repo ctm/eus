@@ -13,6 +13,12 @@ module Eus
     def solve
       return [] if board.solved?
 
+      # This code will work perfectly fine if instead of storing the
+      # board's hash in seen we store (and later test) the board
+      # itself.  However, the solver will run more than forty times
+      # slower.  I'm guessing that's because doing so prevents the
+      # garbage collector from harvesting all the memory from the
+      # various boards, but I haven't actually checked.
       seen << board.hash
       catch :solution do
         column_to_card_column || column_to_empty_column || column_to_cell ||
@@ -27,7 +33,7 @@ module Eus
     def column_to_card_column
       Board::CARD_COLUMN_INDEXES.any? do |from|
         Board::CARD_COLUMN_INDEXES.any? do |to|
-          next if from == to
+          next nil if from == to
 
           helper(:move_column_to_card_column, from, to)
         end

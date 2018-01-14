@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require 'card'
-require 'board/motion'
+require_relative 'card'
+require_relative 'board/motion'
 
 module Eus
   # Represents the board of 8-off, which is the type of solitaire that
@@ -10,25 +10,28 @@ module Eus
   class Board
     include Motion
 
+    # It is unlikely that either N_COLUMNS or N_CELLS can be changed and
+    # for the code to still work, because 8-off, largely depends on their
+    # being exactly 8 columns and exactly 8 cells.
     N_COLUMNS = 8
+    private_constant :N_COLUMNS
 
-    CARD_COLUMN_INDEXES = (0...Board::N_COLUMNS).freeze
+    N_CELLS = 8
+    private_constant :N_CELLS
 
-    # The following relies on there being the same number of cells as there
-    # are columns.  It might be better to have a separate constant for the
-    # number of cells, but I don't think we've done that elsewhere :-(
-    CELL_INDEXES = (0...Board::N_COLUMNS).freeze
+    CARD_COLUMN_INDEXES = (0...N_COLUMNS).freeze
+    CELL_INDEXES = (0...N_CELLS).freeze
 
     # Boards are initially mutable but are deep frozen when solving to make
-    # sure their not mutated at inopportune times.
-    def initialize(columns, cells, foundations)
+    # sure they're not mutated at inopportune times.
+    def initialize(columns:, cells:, foundations:)
       @columns = columns
       @cells = cells
       @foundations = foundations
     end
 
     def self.parse(string_or_io)
-      new(*Parser.new(string_or_io).parse)
+      new(Parser.new(string_or_io).parse)
     end
 
     def deep_freeze
@@ -82,7 +85,6 @@ module Eus
       all = (columns + cells.compact + foundation_cards).flatten
 
       unless all.size == Card::DECK_SIZE
-        require 'pry'; binding.pry # rubocop:disable Semicolon, Debugger
         raise "Expected #{Card::DECK_SIZE} cards, got #{all.size}"
       end
 
@@ -127,36 +129,19 @@ module Eus
     # we construct the hash so we can have columns of arbitrary length.
     COLUMN_SEPARATOR_VALUE = Card::DECK_SIZE + 1
 
-    # We'll zip these into the columns so we can (numerically) keep them
-    # separate.
+    # We zip these in between columns to (numerically) keep them separate.
     COLUMN_SEPARATORS = Array.new(N_COLUMNS - 1, COLUMN_SEPARATOR_VALUE).freeze
 
     # The +2 is so we can use any Card's value as well as
     # Card::BLANK_VALUE as well as COLUMN_SEPARATOR_VALUE.  Those two
-    # magic values are ugly and should go away, but it'll be easier to
-    # do that after specs are written.
+    # magic values are ugly and may go away.
     CARD_BIT_WIDTH = Math.log2(Card::DECK_SIZE + 2).ceil
 
     def cards(arr)
       Array(arr).map { |symbol| Card.new(symbol) }
     end
-
-    def card_at(position)
-      if position < N_COLUMNS
-        columns[position]&.last
-      else
-        cells[position - N_COLUMNS]
-      end
-    end
-
-    def playable?(card, position)
-      return true unless (base_card = card_at(position))
-
-      position < N_COLUMNS && base_card.suit == card.suit &&
-        base_card.rank_value == card.rank_value + 1
-    end
   end
 end
 
-require 'board/presenter'
-require 'board/parser'
+require_relative 'board/presenter'
+require_relative 'board/parser'

@@ -11,15 +11,17 @@ module Eus
         decompose
       end
 
+      # Returns suitable input for Board.new to create a new Board.
       def parse
-        [columns, cells, foundation]
+        { columns: columns, cells: cells, foundations: foundations }
       end
 
       private
 
       BLANK_ROW_SIZE = Presenter::BLANK_ROW.size
+      private_constant :BLANK_ROW_SIZE
 
-      attr_reader :lines, :cells, :foundation, :columns
+      attr_reader :lines, :cells, :foundations, :columns
 
       def decompose # rubocop:disable MethodLength, AbcSize
         # This method mutates lines as it goes.  As such, I prefer to not
@@ -31,8 +33,8 @@ module Eus
 
         # Now pull off the foundation cards, because we need them and
         # they also get in the way.  Beware: this step mutates lines.
-        @foundation = lines[Presenter::FOUNDATION_ROW_OFFSET,
-                            Card::N_SUITS].map do |line|
+        @foundations = lines[Presenter::FOUNDATION_ROW_OFFSET,
+                             Card::N_SUITS].map do |line|
           if (extra = line.slice!(BLANK_ROW_SIZE..-1)&.strip) && !extra.empty?
             Card.new(extra.downcase)
           end
@@ -43,7 +45,7 @@ module Eus
       end
 
       def cards_from_line(line)
-        Array.new(Board::N_COLUMNS) do
+        Array.new(N_COLUMNS) do
           card = line.slice!(0, 3).strip
           card.empty? ? nil : Card.new(card.downcase)
         end

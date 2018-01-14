@@ -5,6 +5,49 @@ module Eus
   # as expected.  #to_s is compact, but #inspect still shows the
   # ivars.
   class Card
+    # Uses a lambda here to make it clear that there's no other use of this
+    # code than creating RANK_VALUES and SUIT_VALUES
+    frozen_value_hash_factory = lambda do |kind, chars|
+      chars.each_char.with_index.with_object({}) do |(char, value), h|
+        h[char.to_sym] = value
+      end.tap do |h| # rubocop:disable MultilineBlockChain
+        h.default_proc = ->(_h, k) { raise "Unknown #{kind} #{k}" }
+        h.freeze
+      end
+    end
+
+    # We want to make as many of the following constants private as
+    # possible.  However, DECK_SIZE is public and requires many of the
+    # other constants to be defined before it is defined, so we have
+    # private constant declarations here, where we'd normally only
+    # have the public ones.
+
+    RANK_VALUES = frozen_value_hash_factory['rank', 'a23456789tjqk']
+    private_constant :RANK_VALUES
+
+    N_RANKS = RANK_VALUES.size
+    private_constant :N_RANKS
+
+    LOWEST_RANK = RANK_VALUES.keys.first
+    private_constant :LOWEST_RANK
+
+    HIGHEST_RANK = RANK_VALUES.keys.last
+
+    VALUES_RANK = RANK_VALUES.invert.freeze
+    private_constant :VALUES_RANK
+
+    # Suit order is slightly important.  We want the values to represent
+    # the foundation suits from top to bottom.
+    SUIT_VALUES = frozen_value_hash_factory['suit', 'scdh']
+    private_constant :SUIT_VALUES
+
+    N_SUITS = SUIT_VALUES.size
+
+    VALUES_SUIT = SUIT_VALUES.invert.freeze
+    private_constant :VALUES_SUIT
+
+    DECK_SIZE = N_RANKS * N_SUITS # does not include the blank card
+
     # There is currently no way to construct a card with a 0 for its value,
     # howevever, in places where we either have a card or nil and we need
     # a value to represent it, we use 0.  This is ugly and may change.
@@ -41,7 +84,7 @@ module Eus
       suit == other.suit && rank_value == other.rank_value - 1
     end
 
-    def next
+    def next_higher_card
       if rank == HIGHEST_RANK
         nil
       else
@@ -64,35 +107,5 @@ module Eus
         raise "card_or_rank: #{card_or_rank}, optional_suit: #{optional_suit}"
       end
     end
-
-    # Uses a lambda here to make it clear that there's no other use of this
-    # code than creating RANK_VALUES and SUIT_VALUES
-    frozen_value_hash_factory = lambda do |kind, chars|
-      chars.each_char.with_index.with_object({}) do |(char, value), h|
-        h[char.to_sym] = value
-      end.tap do |h| # rubocop:disable MultilineBlockChain
-        h.default_proc = ->(_h, k) { raise "Unknown #{kind} #{k}" }
-        h.freeze
-      end
-    end
-
-    RANK_VALUES = frozen_value_hash_factory['rank', 'a23456789tjqk']
-    N_RANKS = RANK_VALUES.size
-
-    LOWEST_RANK = RANK_VALUES.keys.first
-
-    HIGHEST_RANK = RANK_VALUES.keys.last
-
-    VALUES_RANK = RANK_VALUES.invert.freeze
-
-    # Suit order is slightly important.  We want the values to represent
-    # the foundation suits from top to bottom.
-    SUIT_VALUES = frozen_value_hash_factory['suit', 'scdh']
-    N_SUITS = SUIT_VALUES.size
-
-    VALUES_SUIT = SUIT_VALUES.invert.freeze
-    private_constant :VALUES_SUIT
-
-    DECK_SIZE = N_RANKS * N_SUITS # does not include the blank card
   end
 end

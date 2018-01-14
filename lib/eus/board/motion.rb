@@ -62,12 +62,16 @@ module Eus
         end
       end
 
-      def unlock_cells
-        @cells = cells.dup if cells.frozen?
-      end
-
-      def unlock_foundations
-        @foundations = foundations.dup if foundations.frozen?
+      # define unlock_cells, unlock_foundations and unlock_foundation_map.
+      %w[cells foundations foundation_map].each do |stem|
+        ivar = "@#{stem}"
+        method = "unlock_#{stem}"
+        define_method("unlock_#{stem}") do
+          if (v = send(stem)).frozen?
+            instance_variable_set ivar, v.dup
+          end
+        end
+        private method
       end
 
       # Creates a new board and then runs instance evals &block inside
@@ -87,13 +91,16 @@ module Eus
       # This will only be called by a board that is not frozen
       def do_automatic_moves
         while column_automatic_move || cell_automatic_move
+          # Nothing to do here, because column_automatic_move and
+          # cell_automatic_move both do work and return whether or not
+          # they did work.
         end
       end
 
       def column_automatic_move
         CARD_COLUMN_INDEXES.any? do |index|
           next false unless (card = columns[index]&.last)
-          next false unless (foundation_index = foundation_map[card.value])
+          next false unless (foundation_index = foundation_map[card])
 
           unlock_columns index
           columns[index].pop
@@ -105,7 +112,7 @@ module Eus
       def cell_automatic_move
         CELL_INDEXES.any? do |index|
           next false unless (card = cells[index])
-          next false unless (foundation_index = foundation_map[card.value])
+          next false unless (foundation_index = foundation_map[card])
 
           unlock_cells
           cells[index] = nil
@@ -114,11 +121,24 @@ module Eus
         end
       end
 
+      # A Hash whose keys are Cards and whose values are indexes into the
+      # foundations array.  There will be at most four keys, one for each
+      # suit.
+      #
+      # If the foundation has only the deuce of spades showing, with
+      # hearts, diamonds and clubs yet unplayed, then foundation_map would
+      # map the trey of spades to the spade index, the ace of hearts to the
+      # hearts index, the ace of diamonds to the diamond index and the
+      # ace of clubs to the clubs index.
+      #
+      # If a king is showing on the foundation be no key for that suit,
+      # because nothing is ever played on a king.
       def foundation_map
         @foundation_map ||= foundations.each
                                        .with_index
                                        .with_object({}) do |(card, index), h|
-          h[(card&.next || Card.foundation_card_for_index(index)).value] = index
+          key = card&.next_higher_card || Card.foundation_card_for_index(index)
+          h[key] = index if key
         end
       end
 
@@ -128,12 +148,8 @@ module Eus
 
         unlock_foundation_map
         foundation_map.delete(card)
-        return unless (next_card = card.next)
-        foundation_map[next_card.value] = index
-      end
-
-      def unlock_foundation_map
-        @foundation_map = @foundation_map.dup if foundation_map.frozen?
+        return unless (next_card = card.next_higher_card)
+        foundation_map[next_card] = index
       end
     end
   end
