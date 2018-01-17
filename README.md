@@ -1,15 +1,20 @@
 # A meta time sink
 
 This code solves Eric's Ultimate Solitaire (EUS) boards using brute force.
+There's a ruby version and a rust version.
 
 Specifically, this code solves the demo version of EUS that was
 packaged with Executor/DOS.  Executor/DOS, and consequently EUS, can
 be run in your browser at
 [https://archive.org/details/executor](https://archive.org/details/executor).
 
-This code is a step above hack-and-slash, but is still far from
+The ruby code is a step above hack-and-slash, but is still far from
 polished. I started writing it when I was tired and wanted a
 distraction from life's demands.  It served that purpose.
+
+The rust code is a step below hack-and-slash.  It is essentially my
+first rust program, although I have played around a tiny bit with
+rust here and there over the last few years.
 
 Although I'll quite possibly give up before I get there, it might be
 nice to eventually expand this into some code that actually *plays*
@@ -19,22 +24,23 @@ tell the browser which cards to move.
 
 Writing this gave me a chance to play with a representation (but
 definitely not a generalized or even fast representation) of cards in
-Ruby, with an eye toward perhaps doing the same in Rust.  I like what
-I've seen of Rust and Rust compiles to WebAssembly, so rewriting in
-Rust would be a fun step towards self-playing EUS.
+ruby and Rust.  I like what I've seen of rust and rust compiles to
+WebAssembly, so my rust port is a fun step towards self-playing EUS.
 
 Realistically, I'll probably only work on this in fits and starts and
-may never do anything with it now that I have a working solver.
+may never do anything with it now that I have a working solver in
+both languages.
 
-## Stack Overflow
+## Stack Overflow in the ruby version
 
 FWIW, the file [boards/annoyingly_hard](boards/annoyingly_hard) is
 what inspired me to write this solver to begin with.  I gave up trying
 to solve that one when I was revisiting EUS after having discovered
-Executor/DOS at archive.org.  When I finally got the solver working, I
-asked it to solve that board and I got a stack overflow.  On macOS
-10.13.2 I was able to get around that problem by a combination of
-`ulimit -s 16384` and `RUBY_THREAD_VM_STACK_SIZE=4194304`:
+Executor/DOS at archive.org.  When I finally got the ruby solver
+working, I asked it to solve that board and I got a stack overflow.
+On macOS 10.13.2 I was able to get around that problem by a
+combination of `ulimit -s 16384` and
+`RUBY_THREAD_VM_STACK_SIZE=4194304`:
 
 ```
 bash-3.2[master]$ ulimit -s 16384

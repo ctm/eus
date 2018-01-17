@@ -1,0 +1,47 @@
+Rust thoughts:
+
+Although the solver runs, it's pretty ugly since it's my first rust code.
+
+Now that I have something working, I can rewrite it with a Board being
+one single array of Cards, using slices to get the foundation, columns
+and cells.  Doing so might actually allow us to DRY up some code since
+all the non-automatic moves would really be a matter of checking the
+validity and then creating a new board with exactly the same board,
+but with from being a blank card and to being the single card that is
+being moved.
+
+The amount of hoops we have to jump through to get a Board's hash
+seems excessive.  After making the Board one big array, it probably
+makes sense to redo hash_bytes.
+
+Logically a card could be represented either as a value where we use
+suit * 13 + rank or rank * 4 + suit or a bitfield of width 2 for the
+suit and 4 for the rank, although it's not clear just how support we'd
+get from rust using bigfields.  When going with values, I typically
+have used suit * 13 + rank so that adjacent cards in suit have
+adjacent values, but there's a tiny chance that multiplying by four is
+faster than multiplying by 13, since it's a shift (although my guess
+is that they're the exact same speed on all modern processors).  In
+theory, Rust would allow us to trivially change the various
+representations and benchmark.
+
+I expected even my first any fixed-length array rust version to run
+100 times faster than the relatively unoptimized ruby version that
+I wrote first.  I was wrong.  I get about a 40x speedup, although I
+haven't done any compilation tweaks other than to use the --release
+flag.
+
+However, the ruby version currently solves the toughest test case we
+have in less than a second and a half, so futzing around with
+different representations might take us into the zone where it's not
+measurable, but since I'm new to rust (and haven't even done any
+C-level card representations on a modern CPU), I don't have a feel for
+any of this.
+
+For card representations, we're currently using a u8 and do the math
+ourselves, because there's no need to worry about padding or
+conversion.  However, here are a couple crates that should eventually
+be examined:
+
+https://docs.rs/bit_field/0.6.0/bit_field/trait.BitField.html
+https://docs.rs/bitfield/0.12.1/bitfield/
