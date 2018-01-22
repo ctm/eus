@@ -10,7 +10,7 @@ use self::foundation::Foundation;
 mod cells;
 use self::cells::Cells;
 
-mod column;
+pub mod column;
 use self::column::Column;
 
 use std::ops::Range;
@@ -24,7 +24,7 @@ const FOUNDATION_SUIT_OFFSET: usize = FOUNDATION_RANK_OFFSET + 1;
 pub struct Board {
     pub foundation: Foundation,
     pub cells: Cells,
-    columns: [Column; N_COLUMNS],
+    pub columns: [Column; N_COLUMNS],
 }
 
 impl Board {

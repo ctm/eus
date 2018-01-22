@@ -48,7 +48,7 @@ impl Card {
     pub fn is_highest_rank(&self) -> bool {
         self.rank() == HIGHEST_RANK
     }
-    
+
     pub fn plays_on_top_of(&self, other: Self) -> bool {
         other.is_blank() ||
             (self.suit() == other.suit() && self.rank() + 1 == other.rank())
@@ -66,7 +66,7 @@ impl Card {
         Self { value: Self::value_for_suit_and_rank(suit, rank) }
     }
 
-    fn rank(&self) -> usize {
+    pub fn rank(&self) -> usize {
         self.value as usize / N_SUITS
     }
 

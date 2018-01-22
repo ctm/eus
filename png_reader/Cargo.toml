@@ -1,5 +1,5 @@
 [package]
-name = "meta_sink"
+name = "card_id_poc"
 version = "0.1.0"
 authors = ["Clifford T. Matthews <ctm@devctm.com>"]
 
