@@ -3,14 +3,14 @@
 mod card;
 
 mod board;
-use board::Board;
+use crate::board::Board;
 
 mod solver;
-use solver::Solver;
+use crate::solver::Solver;
 
 fn main() {
     let board = Board::parse();
-    
+
     println!("Solving:\n{}", board);
     match Solver::new(&board).solution() {
         Some(solution) => println!("Solution = {:?}", solution),

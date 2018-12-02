@@ -1,24 +1,26 @@
 use std::fmt;
 
-use card::Card;
-use board;
+use crate::board;
+use crate::card::Card;
 
 pub const N_CELLS: usize = board::N_COLUMNS;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Cells {
-    pub cards: [Card; N_CELLS],
+    pub cards: [Option<Card>; N_CELLS],
 }
 
 impl Cells {
     pub fn new() -> Self {
-        Self { cards: [Card::blank(); N_CELLS] }
+        Self {
+            cards: [None; N_CELLS],
+        }
     }
 
-    pub fn empty_cell_index(&self) -> Option<usize> {
+    pub fn empty_cell_index(self) -> Option<usize> {
         for (i, card) in self.cards.iter().enumerate() {
-            if card.is_blank() {
-                return Some(i)
+            if card.is_none() {
+                return Some(i);
             }
         }
         None
@@ -28,10 +30,17 @@ impl Cells {
 impl fmt::Display for Cells {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // This leaves trailing spaces.
-        write!(f, "{}",
-               self.cards
-                   .iter()
-                   .map(|c| format!("{}", c))
-                   .collect::<Vec<String>>().join(" "))
+        write!(
+            f,
+            "{}",
+            self.cards
+                .iter()
+                .map(|c| match c {
+                    None => "  ".to_string(),
+                    Some(card) => format!("{}", card),
+                })
+                .collect::<Vec<String>>()
+                .join(" ")
+        )
     }
 }

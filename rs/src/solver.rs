@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
-use board::Board;
+use crate::board::Board;
 
 // Don't need either of these, but at least Hash isn't in there.
-#[derive(Debug)] 
+#[derive(Debug)]
 pub struct Solver {
     board: Board,
 }
@@ -27,29 +27,41 @@ impl Solver {
 
     // Using an &str for the first of the tuples is gross, but I'm
     // too lazy to make an Enum yet
-    pub fn solve(&self, seen: &mut HashSet<Board>,
-                        solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    pub fn solve(
+        &self,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         if self.board.is_solved() {
-            return true;
+            true
         } else {
             seen.insert(self.board);
 
-            self.column_to_card_column(seen, solution) ||
-                self.column_to_empty_column(seen, solution) ||
-                self.column_to_cell(seen, solution) ||
-                self.cell_to_card_column(seen, solution) ||
-                self.cell_to_empty_column(seen, solution)
+            self.column_to_card_column(seen, solution)
+                || self.column_to_empty_column(seen, solution)
+                || self.column_to_cell(seen, solution)
+                || self.cell_to_card_column(seen, solution)
+                || self.cell_to_empty_column(seen, solution)
         }
     }
 
-    fn column_to_card_column(&self, seen: &mut HashSet<Board>,
-                                    solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    fn column_to_card_column(
+        &self,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         for from in Board::column_index_iterator() {
             for to in Board::column_index_iterator() {
-                if from != to { // This is a premature optimization.  FIXME: benchmark without
-                    if Self::helper(self.board.column_to_card_column(from, to),
-                                    "move_column_to_card_column",
-                                    from, to, seen, solution) {
+                if from != to {
+                    // This is a premature optimization.  FIXME: benchmark without
+                    if Self::helper(
+                        self.board.column_to_card_column(from, to),
+                        "move_column_to_card_column",
+                        from,
+                        to,
+                        seen,
+                        solution,
+                    ) {
                         return true;
                     }
                 }
@@ -58,13 +70,21 @@ impl Solver {
         false
     }
 
-    fn column_to_empty_column(&self, seen: &mut HashSet<Board>,
-                              solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    fn column_to_empty_column(
+        &self,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         if let Some(to) = self.board.empty_column() {
             for from in Board::column_index_iterator() {
-                if Self::helper(self.board.column_to_empty_column(from, to),
-                                "move_column_to_empty_column",
-                                from, to, seen, solution) {
+                if Self::helper(
+                    self.board.column_to_empty_column(from, to),
+                    "move_column_to_empty_column",
+                    from,
+                    to,
+                    seen,
+                    solution,
+                ) {
                     return true;
                 }
             }
@@ -72,13 +92,21 @@ impl Solver {
         false
     }
 
-    fn column_to_cell(&self, seen: &mut HashSet<Board>,
-                      solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    fn column_to_cell(
+        &self,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         if let Some(to) = self.board.cells.empty_cell_index() {
             for from in Board::column_index_iterator() {
-                if Self::helper(self.board.column_to_cell(from, to),
-                                "move_column_to_cell",
-                                from, to, seen, solution) {
+                if Self::helper(
+                    self.board.column_to_cell(from, to),
+                    "move_column_to_cell",
+                    from,
+                    to,
+                    seen,
+                    solution,
+                ) {
                     return true;
                 }
             }
@@ -86,13 +114,21 @@ impl Solver {
         false
     }
 
-    fn cell_to_card_column(&self, seen: &mut HashSet<Board>,
-                                  solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    fn cell_to_card_column(
+        &self,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         for from in Board::cell_index_iterator() {
             for to in Board::column_index_iterator() {
-                if Self::helper(self.board.cell_to_card_column(from, to),
-                                "move_cell_to_card_column",
-                                from, to, seen, solution) {
+                if Self::helper(
+                    self.board.cell_to_card_column(from, to),
+                    "move_cell_to_card_column",
+                    from,
+                    to,
+                    seen,
+                    solution,
+                ) {
                     return true;
                 }
             }
@@ -100,13 +136,21 @@ impl Solver {
         false
     }
 
-    fn cell_to_empty_column(&self, seen: &mut HashSet<Board>,
-                            solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    fn cell_to_empty_column(
+        &self,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         if let Some(to) = self.board.empty_column() {
             for from in Board::cell_index_iterator() {
-                if Self::helper(self.board.cell_to_empty_column(from, to),
-                                "move_cell_to_empty_column",
-                                from, to, seen, solution) {
+                if Self::helper(
+                    self.board.cell_to_empty_column(from, to),
+                    "move_cell_to_empty_column",
+                    from,
+                    to,
+                    seen,
+                    solution,
+                ) {
                     return true;
                 }
             }
@@ -114,8 +158,14 @@ impl Solver {
         false
     }
 
-    fn helper(maybe_board: Option<Board>, step_name: &'static str, from: usize, to: usize,
-               seen: &mut HashSet<Board>, solution: &mut Vec<(&'static str, u8, u8)>) -> bool {
+    fn helper(
+        maybe_board: Option<Board>,
+        step_name: &'static str,
+        from: usize,
+        to: usize,
+        seen: &mut HashSet<Board>,
+        solution: &mut Vec<(&'static str, u8, u8)>,
+    ) -> bool {
         if let Some(board) = maybe_board {
             if seen.contains(&board) {
                 return false;
