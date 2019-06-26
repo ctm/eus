@@ -13,9 +13,8 @@ use self::cells::Cells;
 mod column;
 use self::column::Column;
 
-use std::ops::Range;
-
 pub const N_COLUMNS: usize = 8;
+pub const N_CELLS: usize = cells::N_CELLS;
 
 const FOUNDATION_RANK_OFFSET: usize = N_COLUMNS * 3 + 1;
 const FOUNDATION_SUIT_OFFSET: usize = FOUNDATION_RANK_OFFSET + 1;
@@ -64,8 +63,8 @@ impl Board {
         lines.pop();
 
         for (row_number, line) in lines.iter().enumerate() {
-            for column_number in Self::column_index_iterator() {
-                columns[column_number].cards[row_number] =
+            for (column_number, column) in columns.iter_mut().enumerate().take(N_COLUMNS) {
+                column.cards[row_number] =
                     Self::card_from_line_indexed_by_column(&line, column_number);
             }
             Self::optionally_add_foundation_card(&mut foundation, row_number, &line);
@@ -84,7 +83,7 @@ impl Board {
     }
 
     fn column_automatic_move(&mut self) -> bool {
-        for column_index in Self::column_index_iterator() {
+        for column_index in 0..N_COLUMNS {
             let (from_card, from_index) = self.columns[column_index].top_card_and_index();
 
             if self.play_on_foundation(from_card) {
@@ -96,7 +95,7 @@ impl Board {
     }
 
     fn cell_automatic_move(&mut self) -> bool {
-        for cell_index in Self::cell_index_iterator() {
+        for cell_index in 0..N_CELLS {
             let from_card = self.cells.cards[cell_index];
 
             if self.play_on_foundation(from_card) {
@@ -130,14 +129,6 @@ impl Board {
                 true
             }
         }
-    }
-
-    pub fn column_index_iterator() -> Range<usize> {
-        0..N_COLUMNS
-    }
-
-    pub fn cell_index_iterator() -> Range<usize> {
-        0..cells::N_CELLS
     }
 
     pub fn is_solved(&self) -> bool {
@@ -227,7 +218,7 @@ impl Board {
     }
 
     pub fn empty_column(&self) -> Option<usize> {
-        for column_number in Self::column_index_iterator() {
+        for column_number in 0..N_COLUMNS {
             if self.columns[column_number].cards[0].is_none() {
                 return Some(column_number);
             }

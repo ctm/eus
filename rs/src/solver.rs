@@ -1,6 +1,10 @@
 use std::collections::HashSet;
 
+use crate::board;
 use crate::board::Board;
+
+const N_COLUMNS: usize = board::N_COLUMNS;
+const N_CELLS: usize = board::N_CELLS;
 
 // Don't need either of these, but at least Hash isn't in there.
 #[derive(Debug)]
@@ -50,8 +54,8 @@ impl Solver {
         seen: &mut HashSet<Board>,
         solution: &mut Vec<(&'static str, u8, u8)>,
     ) -> bool {
-        for from in Board::column_index_iterator() {
-            for to in Board::column_index_iterator() {
+        for from in 0..N_COLUMNS {
+            for to in 0..N_COLUMNS {
                 if from != to {
                     // This is a premature optimization.  FIXME: benchmark without
                     if Self::helper(
@@ -76,7 +80,7 @@ impl Solver {
         solution: &mut Vec<(&'static str, u8, u8)>,
     ) -> bool {
         if let Some(to) = self.board.empty_column() {
-            for from in Board::column_index_iterator() {
+            for from in 0..N_COLUMNS {
                 if Self::helper(
                     self.board.column_to_empty_column(from, to),
                     "move_column_to_empty_column",
@@ -98,7 +102,7 @@ impl Solver {
         solution: &mut Vec<(&'static str, u8, u8)>,
     ) -> bool {
         if let Some(to) = self.board.cells.empty_cell_index() {
-            for from in Board::column_index_iterator() {
+            for from in 0..N_COLUMNS {
                 if Self::helper(
                     self.board.column_to_cell(from, to),
                     "move_column_to_cell",
@@ -119,8 +123,8 @@ impl Solver {
         seen: &mut HashSet<Board>,
         solution: &mut Vec<(&'static str, u8, u8)>,
     ) -> bool {
-        for from in Board::cell_index_iterator() {
-            for to in Board::column_index_iterator() {
+        for from in 0..N_CELLS {
+            for to in 0..N_COLUMNS {
                 if Self::helper(
                     self.board.cell_to_card_column(from, to),
                     "move_cell_to_card_column",
@@ -142,7 +146,7 @@ impl Solver {
         solution: &mut Vec<(&'static str, u8, u8)>,
     ) -> bool {
         if let Some(to) = self.board.empty_column() {
-            for from in Board::cell_index_iterator() {
+            for from in 0..N_CELLS {
                 if Self::helper(
                     self.board.cell_to_empty_column(from, to),
                     "move_cell_to_empty_column",
