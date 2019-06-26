@@ -77,3 +77,22 @@ triple are the `from` and `to` values, each of which is zero based.
 |`:move_column_to_cell`|move a card from a column to an empty cell|
 |`:move_cell_to_card_column`|move a card from a cell to a column which has at least one card in it|
 |`:move_cell_to_empty_column`|move a card from a cell to a column which is empty|
+
+## Coda
+
+Sure enough, much time passed and I never did get to the point of
+making the software actually drive a browser.  I did spend a little
+time working on card recognition in another branch.  I also spent a
+little time trying to figure out how to use WASM to insert events and
+didn't see any way to do so (and suspect it's disallowed due to the
+obvious security problems it would introduce).  I also looked briefly
+into what it would take to make a browser extension that would do it,
+but I don't recall seeing any code that would have shown me the way
+and I wound up getting distracted by other things.
+
+FWIW, I decided to turn this make this repository public in part
+because I'm searching for Rust programming work, even though I still
+don't know Rust very well.  Although this is poor Rust code, it does
+reflect some aspects of my nature that may make me a useful addition
+to the right team.
+
