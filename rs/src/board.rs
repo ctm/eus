@@ -65,9 +65,9 @@ impl Board {
         for (row_number, line) in lines.iter().enumerate() {
             for (column_number, column) in columns.iter_mut().enumerate().take(N_COLUMNS) {
                 column.cards[row_number] =
-                    Self::card_from_line_indexed_by_column(&line, column_number);
+                    Self::card_from_line_indexed_by_column(line, column_number);
             }
-            Self::optionally_add_foundation_card(&mut foundation, row_number, &line);
+            Self::optionally_add_foundation_card(&mut foundation, row_number, line);
         }
         Self::set_cells(&mut cells, &cell_line);
 
@@ -137,36 +137,32 @@ impl Board {
 
     pub fn column_to_card_column(&self, from: usize, to: usize) -> Option<Self> {
         let (from_ocard, from_index) = self.columns[from].top_card_and_index();
-        match from_ocard {
-            None => None,
-            Some(from_card) => {
-                let (to_card, to_index) = self.columns[to].top_card_and_index();
+        from_ocard.and_then(|from_card| {
+            let (to_card, to_index) = self.columns[to].top_card_and_index();
 
-                if to_card.is_none() || !from_card.plays_on_top_of(to_card) {
-                    return None;
-                }
-
-                let mut board = *self;
-
-                board.columns[from].cards[from_index] = None;
-                board.columns[to].cards[to_index + 1] = from_ocard;
-
-                Some(board)
+            if to_card.is_none() || !from_card.plays_on_top_of(to_card) {
+                return None;
             }
-        }
+
+            let mut board = *self;
+
+            board.columns[from].cards[from_index] = None;
+            board.columns[to].cards[to_index + 1] = from_ocard;
+
+            Some(board)
+        })
     }
 
     pub fn column_to_empty_column(&self, from: usize, to: usize) -> Option<Self> {
         let (from_card, from_index) = self.columns[from].top_card_and_index();
 
-        from_card?;
+        from_card.map(|_| {
+            let mut board = *self;
 
-        let mut board = *self;
-
-        board.columns[from].cards[from_index] = None;
-        board.columns[to].cards[0] = from_card;
-
-        Some(board)
+            board.columns[from].cards[from_index] = None;
+            board.columns[to].cards[0] = from_card;
+            board
+        })
     }
 
     pub fn column_to_cell(&self, from: usize, to: usize) -> Option<Self> {
@@ -218,12 +214,7 @@ impl Board {
     }
 
     pub fn empty_column(&self) -> Option<usize> {
-        for column_number in 0..N_COLUMNS {
-            if self.columns[column_number].cards[0].is_none() {
-                return Some(column_number);
-            }
-        }
-        None
+        (0..N_COLUMNS).find(|&column_number| self.columns[column_number].cards[0].is_none())
     }
 
     fn card_from_line_indexed_by_column(line: &str, column: usize) -> Option<Card> {
@@ -253,7 +244,7 @@ impl Board {
     fn set_cells(cells: &mut Cells, line: &str) {
         for column_number in 0..N_COLUMNS {
             cells.cards[column_number] =
-                Self::card_from_line_indexed_by_column(&line, column_number);
+                Self::card_from_line_indexed_by_column(line, column_number);
         }
     }
 

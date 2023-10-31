@@ -1,11 +1,11 @@
 use std::fmt;
 use std::num::NonZeroU8;
 
-static SUITS: &str = "SCDH";
-pub const N_SUITS: usize = 4; // Would like SUITS.len();
+const SUITS: &str = "SCDH";
+pub const N_SUITS: usize = SUITS.len();
 
 const RANKS: &str = "A23456789TJQK";
-pub const N_RANKS: usize = 13; // Would like RANKS.len();
+pub const N_RANKS: usize = RANKS.len();
 
 const HIGHEST_RANK: usize = N_RANKS - 1;
 
@@ -41,7 +41,7 @@ impl Card {
         match other {
             None => true,
             Some(other_value) => {
-                (self.suit() == other_value.suit() && self.rank() + 1 == other_value.rank())
+                self.suit() == other_value.suit() && self.rank() + 1 == other_value.rank()
             }
         }
     }
@@ -74,17 +74,9 @@ impl Card {
 }
 
 impl fmt::Display for Card {
-    // It's frustrating that I don't know how to precompute all the
-    // strings for all possible values and then just index into them.
-    //
-    // Actually, I know how to do this now, but I haven't done it yet.
-    // I'm going to get the parser working, first.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", {
-            let rank = self.rank();
-            let suit = self.suit();
-
-            String::from(&RANKS[rank..=rank]) + &SUITS[suit..=suit] // TODO: can I use from_mut here?
-        })
+        let rank = self.rank();
+        let suit = self.suit();
+        write!(f, "{}{}", &RANKS[rank..=rank], &SUITS[suit..=suit])
     }
 }

@@ -90,9 +90,3 @@ into what it would take to make a browser extension that would do it,
 but I don't recall seeing any code that would have shown me the way
 and I wound up getting distracted by other things.
 
-FWIW, I decided to turn this make this repository public in part
-because I'm searching for Rust programming work, even though I still
-don't know Rust very well.  Although this is poor Rust code, it does
-reflect some aspects of my nature that may make me a useful addition
-to the right team.
-

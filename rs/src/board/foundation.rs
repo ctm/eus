@@ -22,13 +22,9 @@ impl Foundation {
     }
 
     pub fn is_solved(self) -> bool {
-        self.cards.iter().all(|c| {
-            // TODO: is there a more succinct way to say this?
-            match c {
-                Some(card) => card.is_highest_rank(),
-                None => false,
-            }
-        })
+        self.cards
+            .iter()
+            .all(|c| c.is_some_and(|c| c.is_highest_rank()))
     }
 
     pub fn with_columns_to_s(self, columns: &[Column; board::N_COLUMNS]) -> String {

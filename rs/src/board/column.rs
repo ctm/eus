@@ -10,7 +10,7 @@ use crate::card::Card;
 const STARTING_DEPTH: usize = 6;
 pub const MAX_COLUMN_SIZE: usize = STARTING_DEPTH + card::N_RANKS - 2;
 
-#[derive(Eq, PartialEq, Debug, Clone, Copy)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy, Ord, PartialOrd)]
 pub struct Column {
     pub cards: [Option<Card>; MAX_COLUMN_SIZE],
 }
@@ -29,25 +29,5 @@ impl Column {
             index += 1
         }
         (self.cards[index], index)
-    }
-}
-
-use std::cmp::Ordering;
-
-impl Ord for Column {
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self.cards < other.cards {
-            Ordering::Less
-        } else if self.cards > other.cards {
-            Ordering::Greater
-        } else {
-            Ordering::Equal
-        }
-    }
-}
-
-impl PartialOrd for Column {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.cards.partial_cmp(&other.cards)
     }
 }
